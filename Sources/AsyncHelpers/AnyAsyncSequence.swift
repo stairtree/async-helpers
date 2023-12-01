@@ -12,44 +12,50 @@
 //===----------------------------------------------------------------------===//
 
 public struct AnyAsyncSequence<Element>: AsyncSequence {
-    public typealias AsyncIterator = AnyAsyncIterator<Element>
-    public typealias Element = Element
+    @usableFromInline
+    /*private*/ let makeErasedAsyncIterator: @Sendable () -> AsyncIterator
 
-    let _makeAsyncIterator: @Sendable () -> AnyAsyncIterator<Element>
+    public struct AsyncIterator: AsyncIteratorProtocol {
+        @usableFromInline
+        /*private*/ let unerasedNext: () async throws -> Element?
 
-    public struct AnyAsyncIterator<E>: AsyncIteratorProtocol {
-        public typealias Element = E
-
-        private let _next: () async throws -> E?
-
-        init<I: AsyncIteratorProtocol>(itr: I) where I.Element == E {
+        @usableFromInline
+        init<I: AsyncIteratorProtocol>(itr: I) where I.Element == Element {
             var itr = itr
-            self._next = {
+            
+            self.unerasedNext = {
                 try await itr.next()
             }
         }
-
-        public mutating func next() async throws -> E? {
-            return try await _next()
+        
+        @inlinable
+        public mutating func next() async throws -> Element? {
+            try await self.unerasedNext()
         }
     }
 
-    public init<S: AsyncSequence>(seq: S) where S.Element == Element {
-        _makeAsyncIterator = {
-            AnyAsyncIterator(itr: seq.makeAsyncIterator())
+    @inlinable
+    public init<S: AsyncSequence & Sendable>(seq: S) where S.Element == Element {
+        self.makeErasedAsyncIterator = {
+            AsyncIterator(itr: seq.makeAsyncIterator())
         }
     }
 
-    public func makeAsyncIterator() -> AnyAsyncIterator<Element> {
-        return _makeAsyncIterator()
+    @inlinable
+    public func makeAsyncIterator() -> AsyncIterator {
+        self.makeErasedAsyncIterator()
     }
 }
 
-extension AsyncSequence {
+extension AsyncSequence where Self: Sendable, Element: Sendable {
+    @inlinable
     public func eraseToAnyAsyncSequence() -> AnyAsyncSequence<Element> {
         AnyAsyncSequence(seq: self)
     }
 }
 
-// extension AnyAsyncSequence.AnyAsyncIterator: @unchecked Sendable where Element: Sendable {}
-extension AnyAsyncSequence: Sendable where Element: Sendable {}
+// N.B.: Conformance must be `@unchecked` because AsyncIterators are explcitly non-Sendable.
+extension AnyAsyncSequence: @unchecked Sendable where Element: Sendable {}
+
+@available(*, unavailable)
+extension AnyAsyncSequence.AsyncIterator: Sendable {}

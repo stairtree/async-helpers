@@ -21,13 +21,13 @@ public actor Awaiter {
     public init() {}
     
     private func addToWaiters() async {
-        switch state {
+        switch self.state {
         case .ready:
             return
         case var .waiting(waiters: waiters):
             await withCheckedContinuation { cont in
                 waiters.append(cont)
-                state = .waiting(waiters: waiters)
+                self.state = .waiting(waiters: waiters)
             }
         }
     }
@@ -47,10 +47,10 @@ public actor Awaiter {
             self.state = .waiting(waiters: waiters)
             nextWaiter.resume()
         }
-        state = .ready
+        self.state = .ready
     }
     
-    public func awaitUntilTriggered<T>(
+    public func awaitUntilTriggered<T: Sendable>(
         _ block: @Sendable @escaping () async throws -> T
     ) async rethrows -> T {
         await self.addToWaiters()
