@@ -47,7 +47,8 @@ jobs:
           DESTINATION: ${{ format('platform={0},{1}', matrix.platform, matrix.destination) }}
         run: |
           set -o pipefail && \
-            xcodebuild test -scheme async-helpers-Package \
+            xcodebuild test -workspace . \
+                            -scheme async-helpers \
                             -enableThreadSanitizer YES \
                             -enableCodeCoverage YES \
                             -disablePackageRepositoryCache \
