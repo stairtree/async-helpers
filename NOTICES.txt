@@ -1,0 +1,7 @@
+This product contains a derivation of the NIOLock and NIOConditionLock implementation
+from SwiftNIO.
+
+  * LICENSE (Apache License 2.0):
+    * https://www.apache.org/licenses/LICENSE-2.0
+  * HOMEPAGE:
+    * https://github.com/apple/swift-nio

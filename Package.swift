@@ -1,4 +1,17 @@
-// swift-tools-version: 5.9
+// swift-tools-version:5.9
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the AsyncHelpers open source project
+//
+// Copyright (c) Stairtree GmbH
+// Licensed under the MIT license
+//
+// See LICENSE.txt for license information
+//
+// SPDX-License-Identifier: MIT
+//
+//===----------------------------------------------------------------------===//
+
 import PackageDescription
 
 let package = Package(
