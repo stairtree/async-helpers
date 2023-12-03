@@ -14,6 +14,14 @@
 
 import PackageDescription
 
+let swiftSettings: [SwiftSetting] = [
+    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("ConciseMagicFile"),
+    .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableExperimentalFeature("StrictConcurrency=complete"),
+]
+
 let package = Package(
     name: "async-helpers",
     platforms: [
@@ -28,7 +36,14 @@ let package = Package(
     targets: [
         .target(
             name: "AsyncHelpers",
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "AsyncHelpersTests",
+            dependencies: [
+                .target(name: "AsyncHelpers"),
+            ],
+            swiftSettings: swiftSettings
         ),
     ]
 )
