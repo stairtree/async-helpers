@@ -31,14 +31,18 @@ final class AsyncHelpersTests: XCTestCase {
         await XCTAssertNilAsync(try await iterator.next())
     }
     
-    func testAwaiter() async {
+    func testUntriggeredAwaiter() async throws {
         let awaiter = Awaiter()
         let expectation1 = XCTestExpectation(description: "Did get unblocked 1")
         let expectation2 = XCTestExpectation(description: "Did get unblocked 2")
         
         Task { await awaiter.awaitUntilTriggered { expectation1.fulfill() } }
         Task { await awaiter.awaitUntilTriggered { expectation2.fulfill() } }
-        
+
+        // Wait for tasks to have run; this is a hack but I can't think of any better way.
+        // Can't use a lock or semaphore; the tasks will block after calling the awaiter until it's trigger.
+        try await Task.sleep(for: .milliseconds(10))
+
         await awaiter.trigger()
         #if canImport(Darwin) || swift(>=5.10)
         await XCTAssertEqualAsync(await XCTWaiter().fulfillment(of: [expectation1, expectation2], timeout: 0.1), .completed)
@@ -46,11 +50,47 @@ final class AsyncHelpersTests: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [expectation1, expectation2], timeout: 0.1), .completed)
         #endif
     }
+
+    func testTriggeredAwaiter() async throws {
+        let awaiter = Awaiter()
+        
+        await awaiter.trigger()
+        
+        let expectation1 = XCTestExpectation(description: "Did get unblocked 1")
+        let expectation2 = XCTestExpectation(description: "Did get unblocked 2")
+        
+        Task { await awaiter.awaitUntilTriggered { expectation1.fulfill() } }
+        Task { await awaiter.awaitUntilTriggered { expectation2.fulfill() } }
+
+        #if canImport(Darwin) || swift(>=5.10)
+        await XCTAssertEqualAsync(await XCTWaiter().fulfillment(of: [expectation1, expectation2], timeout: 0.1), .completed)
+        #else
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation1, expectation2], timeout: 0.1), .completed)
+        #endif
+    }
     
-    /// We don't test the locking implementations here for two reasons:
-    ///
-    /// 1. The implementations are taken from NIO, which has its own robust tests already.
-    /// 2. There's not much useful testing that could be done without quite a bit of work anyhow.
+    /// These tests are deliberately simplistic; they're here more for code coverage than for any actual usefulness.
+    /// This is okay because the implementations are taken from NIO, which has its own robust tests already.
+    func testLocking() async {
+        let lock = Locking.FastLock()
+        lock.withLockVoid { XCTAssertNotNil(lock) }
+        XCTAssert(lock.withLock { true })
+        
+        let condLock = Locking.ConditionLock(value: 0)
+        condLock.lock()
+        condLock.unlock(withValue: 1)
+        XCTAssert(condLock.lock(whenValue: 1, timeoutSeconds: 0.1))
+        condLock.unlock(withValue: 2)
+        XCTAssertEqual(condLock.value, 2)
+        condLock.lock(whenValue: 2)
+        condLock.unlock()
+        
+        let box = Locking.LockedValueBox(Date())
+        box.withLockedValue {
+            $0 = Date.distantPast
+        }
+        XCTAssertEqual(box.withLockedValue { $0 }, Date.distantPast)
+    }
 }
 
 func XCTAssertEqualAsync<T>(
