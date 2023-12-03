@@ -41,7 +41,7 @@ final class AsyncHelpersTests: XCTestCase {
 
         // Wait for tasks to have run; this is a hack but I can't think of any better way.
         // Can't use a lock or semaphore; the tasks will block after calling the awaiter until it's trigger.
-        try await Task.sleep(for: .milliseconds(10))
+        try await Task.sleep(nanoseconds: 100_000_000)
 
         await awaiter.trigger()
         #if canImport(Darwin) || swift(>=5.10)
