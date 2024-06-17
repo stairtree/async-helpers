@@ -12,14 +12,11 @@
 //===----------------------------------------------------------------------===//
 
 public struct AnyAsyncSequence<Element>: AsyncSequence {
-    @usableFromInline
     /*private*/ let makeErasedAsyncIterator: @Sendable () -> AsyncIterator
 
     public struct AsyncIterator: AsyncIteratorProtocol {
-        @usableFromInline
         /*private*/ let unerasedNext: () async throws -> Element?
 
-        @usableFromInline
         init<I: AsyncIteratorProtocol>(itr: I) where I.Element == Element {
             var itr = itr
             
@@ -28,27 +25,23 @@ public struct AnyAsyncSequence<Element>: AsyncSequence {
             }
         }
         
-        @inlinable
         public mutating func next() async throws -> Element? {
             try await self.unerasedNext()
         }
     }
 
-    @inlinable
     public init<S: AsyncSequence & Sendable>(seq: S) where S.Element == Element {
         self.makeErasedAsyncIterator = {
             AsyncIterator(itr: seq.makeAsyncIterator())
         }
     }
 
-    @inlinable
     public func makeAsyncIterator() -> AsyncIterator {
         self.makeErasedAsyncIterator()
     }
 }
 
 extension AsyncSequence where Self: Sendable, Element: Sendable {
-    @inlinable
     public func eraseToAnyAsyncSequence() -> AnyAsyncSequence<Element> {
         AnyAsyncSequence(seq: self)
     }
