@@ -56,7 +56,7 @@ jobs:
                             -destination "${DESTINATION}" |
             xcbeautify --is-ci --quiet --renderer github-actions 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           swift: true
@@ -111,9 +111,9 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with: { languages: swift }
       - name: Perform build
         run: swift build
       - name: Run CodeQL analyze
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
