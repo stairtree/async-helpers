@@ -2,7 +2,7 @@
 // See https://gist.github.com/rnapier/af027808dcfca84686f063963e2a29f5
 
 import Dispatch
-#if os(Linux)
+#if os(Linux) || os(Android)
 import let CDispatch.NSEC_PER_SEC
 #endif
 
