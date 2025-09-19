@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Vendored from NIO 2.83.0
+// Vendored from NIO 2.86.0
 
 //===----------------------------------------------------------------------===//
 //
@@ -56,7 +56,7 @@ typealias LockPrimitive = pthread_mutex_t
 #endif
 
 @usableFromInline
-enum LockOperations {}
+enum LockOperations: Sendable {}
 
 extension LockOperations {
     @inlinable
@@ -200,7 +200,15 @@ final class LockStorage<Value>: ManagedBuffer<Value, LockPrimitive> {
     }
 }
 
+// This compiler guard is here becaue `ManagedBuffer` is already declaring
+// Sendable unavailability after 6.1, which `LockStorage` inherits.
+#if compiler(<6.2)
+@available(*, unavailable)
+extension LockStorage: Sendable {}
+#endif
+
 extension Locking {
+    
     /// A threading lock based on `libpthread` instead of `libdispatch`.
     ///
     /// - Note: ``NIOLock`` has reference semantics.

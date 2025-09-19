@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Vendored from NIO 2.83.0
+// Vendored from NIO 2.86.0
 
 //===----------------------------------------------------------------------===//
 //
@@ -33,18 +33,25 @@ import Darwin
 import ucrt
 import WinSDK
 #elseif canImport(Glibc)
-import Glibc
+@preconcurrency import Glibc
 #elseif canImport(Musl)
-import Musl
+@preconcurrency import Musl
+#elseif canImport(Bionic)
+@preconcurrency import Bionic
+#elseif canImport(WASILibc)
+@preconcurrency import WASILibc
+#if canImport(wasi_pthread)
+import wasi_pthread
+#endif
 #else
 #error("The concurrency lock module was unable to identify your C library.")
 #endif
 
-/// A `Lock` with a built-in state variable.
-///
-/// This class provides a convenience addition to `Lock`: it provides the ability to wait
-/// until the state variable is set to a specific value to acquire the lock.
 extension Locking {
+    /// A `Lock` with a built-in state variable.
+    ///
+    /// This class provides a convenience addition to `Lock`: it provides the ability to wait
+    /// until the state variable is set to a specific value to acquire the lock.
     public final class ConditionLock<T: Equatable> {
         private var _value: T
         private let mutex: FastLock
@@ -170,11 +177,7 @@ extension Locking {
             gettimeofday(&curTime, nil)
             
             let allNSecs: Int64 = timeoutNS + Int64(curTime.tv_usec) * 1000
-#if canImport(wasi_pthread)
-            let tvSec = curTime.tv_sec + (allNSecs / nsecPerSec)
-#else
-            let tvSec = curTime.tv_sec + Int((allNSecs / nsecPerSec))
-#endif
+            let tvSec = curTime.tv_sec + time_t((allNSecs / nsecPerSec))
             
             var timeoutAbs = timespec(
                 tv_sec: tvSec,
