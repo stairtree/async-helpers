@@ -34,7 +34,8 @@ public actor Awaiter {
     
     public func trigger() {
         guard case .waiting(waiters: var waiters) = self.state else {
-            fatalError("Triggering in invalid state")
+            assertionFailure("Triggering in invalid state")
+            return
         }
         
         if waiters.isEmpty {
